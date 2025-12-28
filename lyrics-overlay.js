@@ -1,4 +1,4 @@
-// Lyrics Overlay - Spicetify Extension
+// Lyric Miniplayer - Spicetify Extension
 // Creates a floating Picture-in-Picture lyrics window that stays on top of all apps
 
 (async function LyricsOverlay() {
@@ -522,7 +522,7 @@
 
             return null;
         } catch (error) {
-            console.error('[Lyrics Overlay] Error fetching lyrics:', error);
+            console.error('[Lyric Miniplayer] Error fetching lyrics:', error);
             return null;
         }
     }
@@ -547,7 +547,7 @@
                 setupPipWindow(pipWindow);
                 return;
             } catch (err) {
-                console.log('[Lyrics Overlay] Document PiP failed, trying fallback:', err);
+                console.log('[Lyric Miniplayer] Document PiP failed, trying fallback:', err);
             }
         }
 
@@ -568,7 +568,7 @@
                 Spicetify.showNotification('Could not open lyrics window.', true);
             }
         } catch (err) {
-            console.error('[Lyrics Overlay] Fallback popup failed:', err);
+            console.error('[Lyric Miniplayer] Fallback popup failed:', err);
             Spicetify.showNotification('Could not open lyrics window', true);
         }
     }
@@ -965,7 +965,7 @@
     function createButton() {
         if (Spicetify.Topbar?.Button) {
             new Spicetify.Topbar.Button(
-                'Lyrics Overlay',
+                'Lyric Miniplayer',
                 `<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
                     <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
                     <path d="M19 3h-2v2h2v2h2V5h-2V3z" opacity="0.6"/>
@@ -996,7 +996,7 @@
     // ==================== INIT ====================
     createButton();
     
-    console.log('[Lyrics Overlay] Ready! Click the button or press Ctrl+Shift+L');
-    Spicetify.showNotification('🎵 Lyrics Overlay: Press Ctrl+Shift+L or click the button!');
+    console.log('[Lyric Miniplayer] Ready! Click the button or press Ctrl+Shift+L');
+    Spicetify.showNotification('🎵 Lyric Miniplayer: Press Ctrl+Shift+L or click the button!');
 
 })();

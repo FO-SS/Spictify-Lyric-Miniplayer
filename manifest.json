@@ -1,0 +1,13 @@
+[
+  {
+    "name": "Lyric Miniplayer",
+    "description": "A floating Picture-in-Picture lyrics window that stays on top of other apps. Features synced lyrics, playback controls, volume slider, and adjustable font size.",
+    "preview": "preview.png",
+    "main": "lyrics-overlay.js",
+    "readme": "README.md",
+    "authors": [
+      { "name": "Diego", "url": "https://github.com/YOUR_GITHUB_USERNAME" }
+    ],
+    "tags": ["lyrics", "miniplayer", "pip", "floating", "karaoke"]
+  }
+]
