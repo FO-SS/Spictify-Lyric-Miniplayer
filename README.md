@@ -46,7 +46,7 @@ A Spicetify extension that creates a **floating Picture-in-Picture lyrics window
 
 2. A floating window will appear with your lyrics!
 
-3. **Click the ⠿⠿ dots** in the header to open settings:
+3. **Click the ⠿ dots** in the header to open settings:
    - Toggle lyrics visibility
    - Toggle font size slider
    - Toggle volume slider
@@ -65,7 +65,7 @@ A Spicetify extension that creates a **floating Picture-in-Picture lyrics window
 
 ## ⚙️ Configuration
 
-Click the **⠿⠿ dots** in the header to access settings:
+Click the **⠿ dots** in the header to access settings:
 
 - **Show Lyrics** — Toggle the lyrics display on/off
 - **Font Size** — Show/hide the font size slider
@@ -81,7 +81,6 @@ All preferences are saved and persist between sessions.
 
 ### Window not appearing?
 - Try pressing `Ctrl+Shift+L`
-- Check if popups are blocked in your system
 
 ### Extension not loading?
 1. Verify the file is in the correct Extensions folder
