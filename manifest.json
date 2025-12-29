@@ -6,7 +6,7 @@
     "main": "lyrics-overlay.js",
     "readme": "README.md",
     "authors": [
-      { "name": "Diego", "url": "https://github.com/YOUR_GITHUB_USERNAME" }
+      { "name": "FO-SS", "url": "https://github.com/YOUR_GITHUB_USERNAME" }
     ],
     "tags": ["lyrics", "miniplayer", "pip", "floating", "karaoke"]
   }
