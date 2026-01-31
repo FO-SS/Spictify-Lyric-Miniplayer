@@ -8,12 +8,15 @@ A Spicetify extension that creates a **floating Picture-in-Picture lyrics window
 
 - **🪟 Floating Window** — Opens lyrics in a separate always-on-top window
 - **🎤 Synced Lyrics** — Automatically highlights and scrolls to the current line
-- **⏯️ Playback Controls** — Previous, Play/Pause, Next buttons in the overlay
+- **⏯️ Playback Controls** — Previous, Play/Pause, Next, Shuffle buttons
+- **❤️ Like Button** — Save songs to your Liked Songs directly from the miniplayer
+- **🔀 Shuffle Button** — Toggle shuffle mode
 - **🔊 Volume Control** — Adjust volume with slider, click speaker to mute
 - **🔤 Adjustable Font Size** — Slider to make lyrics larger or smaller
+- **🎨 12 Beautiful Themes** — Spotify, Pink Pop, Kawaii, Ocean Blue, Racing Red, Sunset, Galaxy, Mint Fresh, Luxury Gold, Cyberpunk, Frost, Rose Gold
 - **👆 Click to Seek** — Click any lyric line to jump to that part of the song
-- **⚙️ Settings Menu** — Toggle visibility of lyrics, font size, and volume controls
-- **💾 Remembers Preferences** — Your settings are saved automatically
+- **⚙️ Full Settings Panel** — Customize everything to your liking
+- **💾 Remembers Preferences** — All settings are saved automatically
 - **⌨️ Keyboard Shortcut** — `Ctrl+Shift+L` to quickly open/close
 
 ## 📦 Installation
@@ -46,32 +49,60 @@ A Spicetify extension that creates a **floating Picture-in-Picture lyrics window
 
 2. A floating window will appear with your lyrics!
 
-3. **Click the ⠿ dots** in the header to open settings:
-   - Toggle lyrics visibility
-   - Toggle font size slider
-   - Toggle volume slider
+3. **Click the ⠿ dots** in the header to open settings
 
-## 🎨 Features Overview
+## 🎨 Themes
 
-| Feature | Description |
-|---------|-------------|
-| **Synced Lyrics** | Current line highlights in green and auto-scrolls |
-| **Click to Seek** | Click any line to jump to that timestamp |
-| **Playback Controls** | Control music directly from the miniplayer |
-| **Volume Slider** | Adjust volume, click speaker icon to mute |
-| **Font Size** | Adjust from 12px to 36px |
-| **Settings Menu** | Click ⠿⠿ to toggle UI elements |
-| **Draggable** | Drag the header to move the window |
+Choose from **12 beautiful themes**:
 
-## ⚙️ Configuration
+| Theme | Preview |
+|-------|---------|
+| 💚 Spotify | Classic green accent |
+| 💖 Pink Pop | Vibrant pink |
+| 🌸 Kawaii | Soft pastel pink |
+| 🌊 Ocean Blue | Cool blue tones |
+| 🏎️ Racing Red | Bold red |
+| 🌅 Sunset | Warm orange |
+| 🔮 Galaxy | Purple magic |
+| 🍃 Mint Fresh | Fresh teal |
+| 👑 Luxury Gold | Elegant gold |
+| 🤖 Cyberpunk | Neon magenta |
+| ❄️ Frost | Icy light blue |
+| 🌹 Rose Gold | Romantic rose |
+
+**To change theme:** Settings → Click the theme button → Choose your theme
+
+## ⚙️ Settings & Display Options
 
 Click the **⠿ dots** in the header to access settings:
 
-- **Show Lyrics** — Toggle the lyrics display on/off
-- **Font Size** — Show/hide the font size slider
-- **Volume** — Show/hide the volume slider
+### Theme
+- Click to open the theme picker
+- Choose from 12 themes
+- Changes apply instantly
+
+### Display Options
+| Toggle | Description |
+|--------|-------------|
+| **Show Lyrics** | Show/hide the lyrics section |
+| **Shuffle Button** | Show/hide shuffle button in controls |
+| **Like Button** | Show/hide the heart button |
+| **Close Button** | Show/hide the × close button |
+| **Font Size Slider** | Show/hide the font size control |
+| **Volume Slider** | Show/hide the volume control |
 
 All preferences are saved and persist between sessions.
+
+## 🎮 Controls
+
+| Control | Action |
+|---------|--------|
+| **⏮** | Previous track |
+| **▶/⏸** | Play/Pause |
+| **⏭** | Next track |
+| **🔀** | Toggle shuffle |
+| **❤️** | Like/Unlike song |
+| **×** | Close miniplayer |
 
 ## 🔧 Troubleshooting
 
@@ -81,6 +112,7 @@ All preferences are saved and persist between sessions.
 
 ### Window not appearing?
 - Try pressing `Ctrl+Shift+L`
+- Check if popups are blocked in your system
 
 ### Extension not loading?
 1. Verify the file is in the correct Extensions folder
