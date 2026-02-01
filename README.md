@@ -17,7 +17,6 @@ A Spicetify extension that creates a **floating Picture-in-Picture lyrics window
 - **👆 Click to Seek** — Click any lyric line to jump to that part of the song
 - **⚙️ Full Settings Panel** — Customize everything to your liking
 - **💾 Remembers Preferences** — All settings are saved automatically
-- **⌨️ Keyboard Shortcut** — `Ctrl+Shift+L` to quickly open/close
 
 ## 📦 Installation
 
@@ -43,9 +42,7 @@ A Spicetify extension that creates a **floating Picture-in-Picture lyrics window
 
 ## 🎯 Usage
 
-1. **Click the music note icon (🎵)** in Spotify's top bar  
-   **— OR —**  
-   Press **`Ctrl+Shift+L`** (Windows/Linux) or **`Cmd+Shift+L`** (macOS)
+1. **Click the music note icon (🎵)** in Spotify's top bar
 
 2. A floating window will appear with your lyrics!
 

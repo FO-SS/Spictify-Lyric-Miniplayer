@@ -1595,13 +1595,6 @@
             );
         }
 
-        // Keyboard shortcut: Ctrl+Shift+L
-        document.addEventListener('keydown', (e) => {
-            if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'l') {
-                e.preventDefault();
-                openPictureInPicture();
-            }
-        });
     }
 
     // ==================== EVENT LISTENERS ====================
@@ -1616,7 +1609,6 @@
     // ==================== INIT ====================
     createButton();
     
-    console.log('[Lyric Miniplayer] Ready! Click the button or press Ctrl+Shift+L');
-    Spicetify.showNotification('🎵 Lyric Miniplayer: Press Ctrl+Shift+L or click the button!');
+    console.log('[Lyric Miniplayer] Ready!');
 
 })();
