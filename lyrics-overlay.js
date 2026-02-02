@@ -165,6 +165,7 @@
     let showShuffleBtn = true;
     let showLikeBtn = true;
     let showCloseBtn = true;
+    let centerLyrics = true;
     let currentTheme = 'spotify';
 
     // Load saved settings
@@ -183,6 +184,8 @@
         if (savedShowLike !== null) showLikeBtn = savedShowLike === 'true';
         const savedShowClose = localStorage.getItem('lyrics-overlay-showclose');
         if (savedShowClose !== null) showCloseBtn = savedShowClose === 'true';
+        const savedCenterLyrics = localStorage.getItem('lyrics-overlay-centerlyrics');
+        if (savedCenterLyrics !== null) centerLyrics = savedCenterLyrics === 'true';
         const savedTheme = localStorage.getItem('lyrics-overlay-theme');
         if (savedTheme && THEMES[savedTheme]) currentTheme = savedTheme;
     } catch (e) {}
@@ -712,6 +715,14 @@
             min-height: 0;
         }
 
+        .lyrics-wrap.centered {
+            text-align: center;
+        }
+
+        .lyrics-wrap.centered .lyric {
+            transform-origin: center center;
+        }
+
         .lyrics-wrap.collapsed {
             display: none;
         }
@@ -1073,6 +1084,10 @@
                 <span class="menu-item-label">Show Lyrics</span>
                 <div class="menu-toggle ${showLyrics ? 'on' : ''}" id="toggleLyrics"></div>
             </div>
+            <div class="menu-item" id="toggleCenterItem">
+                <span class="menu-item-label">Center Lyrics</span>
+                <div class="menu-toggle ${centerLyrics ? 'on' : ''}" id="toggleCenter"></div>
+            </div>
             <div class="menu-item" id="toggleShuffleItem">
                 <span class="menu-item-label">Shuffle Button</span>
                 <div class="menu-toggle ${showShuffleBtn ? 'on' : ''}" id="toggleShuffle"></div>
@@ -1125,7 +1140,7 @@
         </button>
     </div>
     
-    <div class="lyrics-wrap ${showLyrics ? '' : 'collapsed'}" id="lyricsContainer">
+    <div class="lyrics-wrap ${showLyrics ? '' : 'collapsed'} ${centerLyrics ? 'centered' : ''}" id="lyricsContainer">
         <div class="status-msg">
             <div class="spinner"></div>
         </div>
@@ -1168,6 +1183,8 @@
         const lyricsContainer = doc.getElementById('lyricsContainer');
         const toggleLyricsItem = doc.getElementById('toggleLyricsItem');
         const toggleLyrics = doc.getElementById('toggleLyrics');
+        const toggleCenterItem = doc.getElementById('toggleCenterItem');
+        const toggleCenter = doc.getElementById('toggleCenter');
         const toggleShuffleItem = doc.getElementById('toggleShuffleItem');
         const toggleShuffle = doc.getElementById('toggleShuffle');
         const toggleLikeItem = doc.getElementById('toggleLikeItem');
@@ -1247,6 +1264,13 @@
             toggleLyrics.classList.toggle('on', showLyrics);
             lyricsContainer.classList.toggle('collapsed', !showLyrics);
             localStorage.setItem('lyrics-overlay-showlyrics', showLyrics);
+        };
+
+        toggleCenterItem.onclick = () => {
+            centerLyrics = !centerLyrics;
+            toggleCenter.classList.toggle('on', centerLyrics);
+            lyricsContainer.classList.toggle('centered', centerLyrics);
+            localStorage.setItem('lyrics-overlay-centerlyrics', centerLyrics);
         };
 
         toggleShuffleItem.onclick = () => {

@@ -14,6 +14,7 @@ A Spicetify extension that creates a **floating Picture-in-Picture lyrics window
 - **🔊 Volume Control** — Adjust volume with slider, click speaker to mute
 - **🔤 Adjustable Font Size** — Slider to make lyrics larger or smaller
 - **🎨 12 Beautiful Themes** — Spotify, Pink Pop, Kawaii, Ocean Blue, Racing Red, Sunset, Galaxy, Mint Fresh, Luxury Gold, Cyberpunk, Frost, Rose Gold
+- **📐 Center/Left Align** — Toggle between centered or left-aligned lyrics
 - **👆 Click to Seek** — Click any lyric line to jump to that part of the song
 - **⚙️ Full Settings Panel** — Customize everything to your liking
 - **💾 Remembers Preferences** — All settings are saved automatically
@@ -82,6 +83,7 @@ Click the **⠿ dots** in the header to access settings:
 | Toggle | Description |
 |--------|-------------|
 | **Show Lyrics** | Show/hide the lyrics section |
+| **Center Lyrics** | Toggle centered or left-aligned lyrics |
 | **Shuffle Button** | Show/hide shuffle button in controls |
 | **Like Button** | Show/hide the heart button |
 | **Close Button** | Show/hide the × close button |
@@ -108,7 +110,7 @@ All preferences are saved and persist between sessions.
 - Lyrics are a Spotify feature (availability varies by region)
 
 ### Window not appearing?
-- Try pressing `Ctrl+Shift+L`
+- Click the music note icon (🎵) in Spotify's top bar
 - Check if popups are blocked in your system
 
 ### Extension not loading?
