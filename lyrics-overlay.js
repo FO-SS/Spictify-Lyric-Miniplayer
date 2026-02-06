@@ -807,23 +807,31 @@
             background: ${t.footerBg};
             border-top: 1px solid rgba(255, 255, 255, 0.05);
             flex-shrink: 0;
-            padding: 8px 10px;
+            padding: 6px 10px;
             -webkit-app-region: no-drag;
             app-region: no-drag;
+        }
+
+        /* Hide footer when all rows are collapsed */
+        .footer:not(:has(.footer-row:not(.collapsed))) {
+            display: none;
         }
 
         .footer-row {
             display: flex;
             align-items: center;
             gap: 6px;
-            transition: all 0.2s ease;
         }
 
         .footer-row.collapsed {
             display: none;
         }
 
-        .footer-row + .footer-row:not(.collapsed) {
+        .footer-row.collapsed + .footer-row:not(.collapsed) {
+            /* No extra spacing when previous row is collapsed */
+        }
+
+        .footer-row:not(.collapsed) + .footer-row:not(.collapsed) {
             margin-top: 6px;
             padding-top: 6px;
             border-top: 1px solid rgba(255, 255, 255, 0.06);
