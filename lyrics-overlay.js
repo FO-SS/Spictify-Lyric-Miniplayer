@@ -728,16 +728,12 @@
         }
 
         .lyrics-wrap::-webkit-scrollbar {
-            width: 4px;
+            display: none;
         }
 
-        .lyrics-wrap::-webkit-scrollbar-track {
-            background: transparent;
-        }
-
-        .lyrics-wrap::-webkit-scrollbar-thumb {
-            background: rgba(255, 255, 255, 0.12);
-            border-radius: 2px;
+        .lyrics-wrap {
+            scrollbar-width: none; /* Firefox */
+            -ms-overflow-style: none; /* IE/Edge */
         }
 
         .lyric {
@@ -1561,12 +1557,17 @@
 
         // Update classes
         const lyrics = doc.querySelectorAll('.lyric');
+        const isPlaying = Spicetify.Player.isPlaying();
+        
         lyrics.forEach((el, idx) => {
             el.classList.remove('active', 'past');
             
             if (idx === activeIdx) {
                 el.classList.add('active');
-                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                // Only auto-scroll when playing, allow free scroll when paused
+                if (isPlaying) {
+                    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
             } else if (idx < activeIdx) {
                 el.classList.add('past');
             }
