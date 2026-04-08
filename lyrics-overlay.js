@@ -19,6 +19,17 @@
 
     // ==================== THEMES ====================
     const THEMES = {
+        album: {
+            name: 'album',
+            emoji: '📀',
+            bg: 'var(--dynamic-bg)',
+            accent: '#ffffff',
+            accentHover: '#f0f0f0',
+            headerBg: 'rgba(0, 0, 0, 0.2)',
+            controlsBg: 'rgba(0, 0, 0, 0)',
+            footerBg: 'rgba(0, 0, 0, 0)',
+            textGlow: 'rgba(255, 255, 255, 0.6)',
+        },
         spotify: {
             name: 'Spotify',
             emoji: '💚',
@@ -166,7 +177,7 @@
     let showLikeBtn = true;
     let showCloseBtn = true;
     let centerLyrics = true;
-    let currentTheme = 'spotify';
+    let currentTheme = 'album';
 
     // Load saved settings
     try {
@@ -216,9 +227,13 @@
         body {
             font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             background: ${t.bg};
+            background-size: cover;       
+            background-position: center;  
+            background-repeat: no-repeat;
             color: #ffffff;
             display: flex;
             flex-direction: column;
+            transition: background 0.5s ease-in-out;
         }
 
         /* Resize Handle at Top - Subtle */
@@ -226,6 +241,9 @@
             height: 4px;
             cursor: ns-resize;
             flex-shrink: 0;
+            background: ${t.headerBg}; 
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
         }
 
         .resize-handle:hover {
@@ -245,6 +263,7 @@
             cursor: grab;
             user-select: none;
             -webkit-app-region: drag;
+            -webkit-backdrop-filter: blur(12px);
             app-region: drag;
         }
 
@@ -738,7 +757,7 @@
 
         .lyric {
             padding: 5px 0;
-            opacity: 0.3;
+            opacity: 0.5;
             transition: all 0.2s ease;
             cursor: pointer;
             line-height: 1.35;
@@ -746,19 +765,19 @@
         }
 
         .lyric:hover {
-            opacity: 0.5;
+            opacity: 0.7;
         }
 
         .lyric.active {
             opacity: 1;
             color: var(--accent);
-            font-weight: 500;
-            transform: scale(1.02);
+            font-weight: 700;
+            transform: scale(1.1);
             text-shadow: 0 0 20px var(--text-glow);
         }
 
         .lyric.past {
-            opacity: 0.4;
+            opacity: 0.5;
         }
 
         /* No Lyrics / Loading */
@@ -781,11 +800,12 @@
         .status-msg .text {
             font-size: 15px;
             font-weight: 500;
+            opacity: 0.2;
         }
 
         .status-msg .subtext {
             font-size: 12px;
-            opacity: 0.6;
+            opacity: 0.2;
             margin-top: 4px;
         }
 
@@ -984,7 +1004,7 @@
 
             pipWindow = window.open(
                 'about:blank',
-                'LyricsOverlayPiP',
+                '♫ Lyrics',
                 `width=${CONFIG.pipWidth},height=${CONFIG.pipHeight},left=${left},top=${top},resizable=yes,scrollbars=no,toolbar=no,menubar=no,location=no,status=no`
             );
 
@@ -1167,6 +1187,15 @@
 </body>
 </html>`);
         doc.close();
+
+    // Refreshing the dynamic background based on the current track
+    const initialTrack = Spicetify.Player.data?.track;
+        if (initialTrack?.album?.images?.length > 0) {
+            const imageUrl = initialTrack.album.images[0].url;
+            const dynamicBackground = `linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url("${imageUrl}")`;
+            doc.body.style.setProperty('--dynamic-bg', dynamicBackground);
+        }
+
 
         // Get elements
         const menuBtn = doc.getElementById('menuBtn');
@@ -1456,6 +1485,16 @@
             currentTrackUri = track.uri;
             loadLyrics(track.uri);
             updatePipLikeState();
+
+            // Update dynamic background
+            if (track.album?.images?.length > 0) {
+            const imageUrl = track.album.images[0].url;
+            const dynamicBackground = `linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url("${imageUrl}")`;
+            
+                if (pipWindow && !pipWindow.closed) {
+                    pipWindow.document.body.style.setProperty('--dynamic-bg', dynamicBackground);
+                }
+            }
         }
     }
 
