@@ -3,7 +3,7 @@
 
 (async function LyricsOverlay() {
     // Wait for Spicetify to be fully loaded
-    while (!Spicetify?.Player?.data || !Spicetify?.Platform || !Spicetify?.CosmosAsync) {
+    while (!window.Spicetify?.Player?.data || !window.Spicetify?.Platform || !window.Spicetify?.CosmosAsync) {
         await new Promise(resolve => setTimeout(resolve, 100));
     }
 
@@ -162,6 +162,8 @@
     let showFontSlider = true;
     let showVolumeSlider = true;
     let showLyrics = true;
+    let showProgressBar = true;
+    let isSeekingProgress = false;
     let showShuffleBtn = true;
     let showLikeBtn = true;
     let showCloseBtn = true;
@@ -178,6 +180,8 @@
         if (savedShowVol !== null) showVolumeSlider = savedShowVol === 'true';
         const savedShowLyrics = localStorage.getItem('lyrics-overlay-showlyrics');
         if (savedShowLyrics !== null) showLyrics = savedShowLyrics === 'true';
+        const savedShowProgress = localStorage.getItem('lyrics-overlay-showprogress');
+        if (savedShowProgress !== null) showProgressBar = savedShowProgress === 'true';
         const savedShowShuffle = localStorage.getItem('lyrics-overlay-showshuffle');
         if (savedShowShuffle !== null) showShuffleBtn = savedShowShuffle === 'true';
         const savedShowLike = localStorage.getItem('lyrics-overlay-showlike');
@@ -221,7 +225,6 @@
             flex-direction: column;
         }
 
-        /* Resize Handle at Top - Subtle */
         .resize-handle {
             height: 4px;
             cursor: ns-resize;
@@ -232,7 +235,6 @@
             background: rgba(255, 255, 255, 0.05);
         }
 
-        /* Header - Draggable */
         .header {
             display: flex;
             align-items: center;
@@ -287,7 +289,6 @@
             text-overflow: ellipsis;
         }
 
-        /* Header Buttons */
         .header-btns {
             display: flex;
             align-items: center;
@@ -343,7 +344,6 @@
             display: none;
         }
 
-        /* Settings Panel - Full Overlay */
         .settings-panel {
             position: absolute;
             top: 0;
@@ -480,7 +480,6 @@
             margin: 16px 0;
         }
 
-        /* Theme Button */
         .theme-btn {
             display: flex;
             align-items: center;
@@ -525,7 +524,6 @@
             font-size: 18px;
         }
 
-        /* Theme Picker Panel */
         .theme-picker {
             position: absolute;
             top: 0;
@@ -626,9 +624,6 @@
             line-height: 1.2;
         }
 
-
-
-        /* Controls */
         .controls {
             display: flex;
             align-items: center;
@@ -703,7 +698,65 @@
             display: none;
         }
 
-        /* Lyrics Container */
+        .progress-wrap {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            padding: 0 10px 8px;
+            background: ${t.controlsBg};
+            flex-shrink: 0;
+            -webkit-app-region: no-drag;
+            app-region: no-drag;
+        }
+
+        .progress-wrap.collapsed {
+            display: none;
+        }
+
+        .time-label {
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.6);
+            min-width: 32px;
+            text-align: center;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .progress-slider {
+            -webkit-appearance: none;
+            flex: 1;
+            height: 4px;
+            border-radius: 999px;
+            outline: none;
+            cursor: pointer;
+            background: linear-gradient(
+                to right,
+                var(--accent) 0%,
+                var(--accent) var(--progress, 0%),
+                rgba(255, 255, 255, 0.18) var(--progress, 0%),
+                rgba(255, 255, 255, 0.18) 100%
+            );
+        }
+
+        .progress-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 11px;
+            height: 11px;
+            border-radius: 50%;
+            background: var(--accent);
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.12s, transform 0.12s;
+        }
+
+        .progress-slider:hover::-webkit-slider-thumb,
+        .progress-slider:active::-webkit-slider-thumb {
+            opacity: 1;
+        }
+
+        .progress-slider::-webkit-slider-thumb:hover {
+            transform: scale(1.15);
+        }
+
         .lyrics-wrap {
             flex: 1 1 auto;
             overflow-y: auto;
@@ -732,8 +785,8 @@
         }
 
         .lyrics-wrap {
-            scrollbar-width: none; /* Firefox */
-            -ms-overflow-style: none; /* IE/Edge */
+            scrollbar-width: none;
+            -ms-overflow-style: none;
         }
 
         .lyric {
@@ -761,7 +814,6 @@
             opacity: 0.4;
         }
 
-        /* No Lyrics / Loading */
         .status-msg {
             display: flex;
             flex-direction: column;
@@ -802,7 +854,6 @@
             to { transform: rotate(360deg); }
         }
 
-        /* Footer */
         .footer {
             background: ${t.footerBg};
             border-top: 1px solid rgba(255, 255, 255, 0.05);
@@ -812,7 +863,6 @@
             app-region: no-drag;
         }
 
-        /* Hide footer when all rows are collapsed */
         .footer:not(:has(.footer-row:not(.collapsed))) {
             display: none;
         }
@@ -825,10 +875,6 @@
 
         .footer-row.collapsed {
             display: none;
-        }
-
-        .footer-row.collapsed + .footer-row:not(.collapsed) {
-            /* No extra spacing when previous row is collapsed */
         }
 
         .footer-row:not(.collapsed) + .footer-row:not(.collapsed) {
@@ -895,7 +941,6 @@
         try {
             const trackId = trackUri.split(':').pop();
             
-            // Method 1: Color Lyrics API
             try {
                 const response = await Spicetify.CosmosAsync.get(
                     `https://spclient.wg.spotify.com/color-lyrics/v2/track/${trackId}?format=json&market=from_token`
@@ -911,7 +956,6 @@
                 }
             } catch (e) {}
 
-            // Method 2: Platform Lyrics API
             if (Spicetify.Platform?.Lyrics) {
                 try {
                     const lyrics = await Spicetify.Platform.Lyrics.getLyrics(trackUri);
@@ -927,7 +971,6 @@
                 } catch (e) {}
             }
 
-            // Method 3: Legacy endpoint
             try {
                 const altResponse = await Spicetify.CosmosAsync.get(
                     `wg://lyrics/v1/track/${trackId}?format=json&market=from_token`
@@ -952,17 +995,14 @@
 
     // ==================== PIP WINDOW CREATION ====================
     async function openPictureInPicture() {
-        // Close existing PiP window if open
         if (pipWindow && !pipWindow.closed) {
             pipWindow.close();
             pipWindow = null;
             return;
         }
 
-        // Reset track URI to force fresh lyrics load
         currentTrackUri = null;
 
-        // Check for Document Picture-in-Picture API (Chrome 116+)
         if ('documentPictureInPicture' in window) {
             try {
                 pipWindow = await window.documentPictureInPicture.requestWindow({
@@ -977,7 +1017,6 @@
             }
         }
 
-        // Fallback: Regular popup window
         try {
             const left = window.screen.width - CONFIG.pipWidth - 30;
             const top = 30;
@@ -1029,7 +1068,6 @@
         const doc = win.document;
         const currentVolume = Math.round((Spicetify.Player.getVolume() || 0) * 100);
 
-        // Build the HTML
         doc.write(`<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1048,24 +1086,14 @@
         </div>
         <div class="header-btns">
             <button class="menu-btn" id="menuBtn" title="Settings">
-                <div class="menu-row">
-                    <div class="menu-dot"></div>
-                    <div class="menu-dot"></div>
-                </div>
-                <div class="menu-row">
-                    <div class="menu-dot"></div>
-                    <div class="menu-dot"></div>
-                </div>
-                <div class="menu-row">
-                    <div class="menu-dot"></div>
-                    <div class="menu-dot"></div>
-                </div>
+                <div class="menu-row"><div class="menu-dot"></div><div class="menu-dot"></div></div>
+                <div class="menu-row"><div class="menu-dot"></div><div class="menu-dot"></div></div>
+                <div class="menu-row"><div class="menu-dot"></div><div class="menu-dot"></div></div>
             </button>
             <button class="close-btn ${showCloseBtn ? '' : 'hidden'}" id="closeBtn" title="Close">×</button>
         </div>
     </div>
 
-    <!-- Settings Panel - Full Screen -->
     <div class="settings-panel" id="settingsPanel">
         <div class="settings-header">
             <span class="settings-title">⚙️ Settings</span>
@@ -1087,6 +1115,10 @@
             <div class="menu-item" id="toggleLyricsItem">
                 <span class="menu-item-label">Show Lyrics</span>
                 <div class="menu-toggle ${showLyrics ? 'on' : ''}" id="toggleLyrics"></div>
+            </div>
+            <div class="menu-item" id="toggleProgressItem">
+                <span class="menu-item-label">Progress Bar</span>
+                <div class="menu-toggle ${showProgressBar ? 'on' : ''}" id="toggleProgress"></div>
             </div>
             <div class="menu-item" id="toggleCenterItem">
                 <span class="menu-item-label">Center Lyrics</span>
@@ -1115,7 +1147,6 @@
         </div>
     </div>
 
-    <!-- Theme Picker Panel -->
     <div class="theme-picker" id="themePicker">
         <div class="theme-picker-header">
             <button class="theme-picker-back" id="themePickerBack">‹</button>
@@ -1143,6 +1174,12 @@
             <svg viewBox="0 0 16 16" id="likeIcon"><path d="M1.69 2A4.582 4.582 0 0 1 8 2.023 4.583 4.583 0 0 1 11.88.817h.002a4.618 4.618 0 0 1 3.782 3.65v.003a4.543 4.543 0 0 1-1.011 3.84L9.35 14.629a1.765 1.765 0 0 1-2.093.464 1.762 1.762 0 0 1-.605-.463L1.348 8.309A4.582 4.582 0 0 1 1.689 2zm3.158.252A3.082 3.082 0 0 0 2.49 7.337l.005.005L7.8 13.664a.264.264 0 0 0 .311.069.262.262 0 0 0 .09-.069l5.312-6.33a3.043 3.043 0 0 0 .68-2.573 3.118 3.118 0 0 0-2.551-2.463 3.079 3.079 0 0 0-2.612.816l-.007.007a1.501 1.501 0 0 1-2.045 0l-.009-.008a3.082 3.082 0 0 0-2.121-.861z"/></svg>
         </button>
     </div>
+
+    <div class="progress-wrap ${showProgressBar ? '' : 'collapsed'}" id="progressWrap">
+        <span class="time-label" id="currentTimeLabel">0:00</span>
+        <input type="range" class="progress-slider" id="progressSlider" min="0" max="1000" value="0">
+        <span class="time-label" id="durationLabel">0:00</span>
+    </div>
     
     <div class="lyrics-wrap ${showLyrics ? '' : 'collapsed'} ${centerLyrics ? 'centered' : ''}" id="lyricsContainer">
         <div class="status-msg">
@@ -1157,9 +1194,7 @@
             <span class="value-display" id="fontValue">${fontSize}px</span>
         </div>
         <div class="footer-row ${showVolumeSlider ? '' : 'collapsed'}" id="volumeRow">
-            <div id="volumeIconWrap">
-                ${getVolumeIconSvg(currentVolume)}
-            </div>
+            <div id="volumeIconWrap">${getVolumeIconSvg(currentVolume)}</div>
             <input type="range" class="slider" id="volumeSlider" min="0" max="100" value="${currentVolume}">
             <span class="value-display" id="volumePercent">${currentVolume}%</span>
         </div>
@@ -1168,7 +1203,6 @@
 </html>`);
         doc.close();
 
-        // Get elements
         const menuBtn = doc.getElementById('menuBtn');
         const settingsPanel = doc.getElementById('settingsPanel');
         const settingsClose = doc.getElementById('settingsClose');
@@ -1185,8 +1219,14 @@
         const volumePercent = doc.getElementById('volumePercent');
         const volumeIconWrap = doc.getElementById('volumeIconWrap');
         const lyricsContainer = doc.getElementById('lyricsContainer');
+        const progressWrap = doc.getElementById('progressWrap');
+        const progressSlider = doc.getElementById('progressSlider');
+        const currentTimeLabel = doc.getElementById('currentTimeLabel');
+        const durationLabel = doc.getElementById('durationLabel');
         const toggleLyricsItem = doc.getElementById('toggleLyricsItem');
         const toggleLyrics = doc.getElementById('toggleLyrics');
+        const toggleProgressItem = doc.getElementById('toggleProgressItem');
+        const toggleProgress = doc.getElementById('toggleProgress');
         const toggleCenterItem = doc.getElementById('toggleCenterItem');
         const toggleCenter = doc.getElementById('toggleCenter');
         const toggleShuffleItem = doc.getElementById('toggleShuffleItem');
@@ -1208,33 +1248,27 @@
         const themeGrid = doc.getElementById('themeGrid');
         const closeBtn = doc.getElementById('closeBtn');
 
-        // Close miniplayer
         closeBtn.onclick = () => {
             win.close();
         };
 
-        // Settings panel toggle
         menuBtn.onclick = (e) => {
             e.stopPropagation();
             settingsPanel.classList.add('open');
         };
 
-        // Close settings panel
         settingsClose.onclick = () => {
             settingsPanel.classList.remove('open');
         };
 
-        // Open theme picker panel
         openThemePickerBtn.onclick = () => {
             themePicker.classList.add('open');
         };
 
-        // Close theme picker (back to settings)
         themePickerBack.onclick = () => {
             themePicker.classList.remove('open');
         };
 
-        // Theme selection
         themeGrid.onclick = (e) => {
             const themeItem = e.target.closest('.theme-item');
             if (themeItem) {
@@ -1242,32 +1276,29 @@
                 if (newTheme && THEMES[newTheme]) {
                     currentTheme = newTheme;
                     localStorage.setItem('lyrics-overlay-theme', currentTheme);
-                    
-                    // Update styles
                     themeStyles.textContent = generateStyles(currentTheme);
-                    
-                    // Update theme button
                     currentThemeEmoji.textContent = THEMES[currentTheme].emoji;
                     currentThemeName.textContent = THEMES[currentTheme].name;
-                    
-                    // Update active state
                     doc.querySelectorAll('.theme-item').forEach(item => {
                         item.classList.toggle('active', item.dataset.theme === currentTheme);
                     });
-                    
-                    // Close picker after selection
                     themePicker.classList.remove('open');
                 }
             }
         };
 
-
-        // Toggle handlers
         toggleLyricsItem.onclick = () => {
             showLyrics = !showLyrics;
             toggleLyrics.classList.toggle('on', showLyrics);
             lyricsContainer.classList.toggle('collapsed', !showLyrics);
             localStorage.setItem('lyrics-overlay-showlyrics', showLyrics);
+        };
+
+        toggleProgressItem.onclick = () => {
+            showProgressBar = !showProgressBar;
+            toggleProgress.classList.toggle('on', showProgressBar);
+            progressWrap.classList.toggle('collapsed', !showProgressBar);
+            localStorage.setItem('lyrics-overlay-showprogress', showProgressBar);
         };
 
         toggleCenterItem.onclick = () => {
@@ -1312,7 +1343,6 @@
             localStorage.setItem('lyrics-overlay-showvol', showVolumeSlider);
         };
 
-        // Control handlers
         prevBtn.onclick = () => Spicetify.Player.back();
         playBtn.onclick = () => Spicetify.Player.togglePlay();
         nextBtn.onclick = () => Spicetify.Player.next();
@@ -1325,39 +1355,29 @@
             Spicetify.Player.toggleHeart();
         };
 
-        // Update shuffle button state
         function updateShuffleState() {
             const isShuffled = Spicetify.Player.getShuffle();
             shuffleBtn.classList.toggle('shuffle-on', isShuffled);
         }
         updateShuffleState();
 
-        // Update like icon (filled vs outline)
         function updateLikeIcon(isLiked) {
             const likeIcon = doc.getElementById('likeIcon');
             if (!likeIcon) return;
-            
             likeBtn.classList.toggle('liked', isLiked);
-            
             if (isLiked) {
-                // Filled heart
                 likeIcon.innerHTML = '<path d="M15.724 4.22A4.313 4.313 0 0 0 12.192.814a4.269 4.269 0 0 0-3.622 1.13.837.837 0 0 1-1.14 0 4.272 4.272 0 0 0-6.21 5.855l5.916 7.05a1.128 1.128 0 0 0 1.727 0l5.916-7.05a4.228 4.228 0 0 0 .945-3.577z"/>';
             } else {
-                // Outline heart
                 likeIcon.innerHTML = '<path d="M1.69 2A4.582 4.582 0 0 1 8 2.023 4.583 4.583 0 0 1 11.88.817h.002a4.618 4.618 0 0 1 3.782 3.65v.003a4.543 4.543 0 0 1-1.011 3.84L9.35 14.629a1.765 1.765 0 0 1-2.093.464 1.762 1.762 0 0 1-.605-.463L1.348 8.309A4.582 4.582 0 0 1 1.689 2zm3.158.252A3.082 3.082 0 0 0 2.49 7.337l.005.005L7.8 13.664a.264.264 0 0 0 .311.069.262.262 0 0 0 .09-.069l5.312-6.33a3.043 3.043 0 0 0 .68-2.573 3.118 3.118 0 0 0-2.551-2.463 3.079 3.079 0 0 0-2.612.816l-.007.007a1.501 1.501 0 0 1-2.045 0l-.009-.008a3.082 3.082 0 0 0-2.121-.861z"/>';
             }
         }
 
-        // Check and update like state
         function updateLikeState() {
             const isLiked = Spicetify.Player.getHeart();
             updateLikeIcon(isLiked);
         }
-        
-        // Initial update
         updateLikeState();
 
-        // Font size handler
         fontSlider.oninput = (e) => {
             fontSize = parseInt(e.target.value);
             fontValue.textContent = `${fontSize}px`;
@@ -1365,7 +1385,6 @@
             updatePipFontSize();
         };
 
-        // Volume handlers
         volumeSlider.oninput = (e) => {
             const vol = parseInt(e.target.value);
             Spicetify.Player.setVolume(vol / 100);
@@ -1373,7 +1392,6 @@
             volumeIconWrap.innerHTML = getVolumeIconSvg(vol);
         };
 
-        // Click volume icon to mute/unmute
         volumeIconWrap.onclick = () => {
             const currentVol = Math.round((Spicetify.Player.getVolume() || 0) * 100);
             if (currentVol > 0) {
@@ -1391,7 +1409,30 @@
             }
         };
 
-        // Lyrics click to seek
+        progressSlider.oninput = (e) => {
+            isSeekingProgress = true;
+            const duration = getTrackDuration();
+            const rawValue = parseInt(e.target.value) || 0;
+            const percent = rawValue / 1000;
+            const seekTime = Math.round(duration * percent);
+
+            currentTimeLabel.textContent = formatTime(seekTime);
+            progressSlider.style.setProperty('--progress', `${percent * 100}%`);
+        };
+
+        progressSlider.onchange = (e) => {
+            const duration = getTrackDuration();
+            const rawValue = parseInt(e.target.value) || 0;
+            const percent = rawValue / 1000;
+            const seekTime = Math.round(duration * percent);
+
+            Spicetify.Player.seek(seekTime);
+
+            setTimeout(() => {
+                isSeekingProgress = false;
+            }, 150);
+        };
+
         lyricsContainer.onclick = (e) => {
             if (e.target.classList.contains('lyric')) {
                 const time = e.target.dataset.time;
@@ -1399,20 +1440,18 @@
             }
         };
 
-        // Handle window close
         win.addEventListener('pagehide', () => {
             pipWindow = null;
         });
 
-        // Initial update - force load lyrics for current track
         async function initialLoad() {
             const track = Spicetify.Player.data?.item;
             if (track?.uri) {
                 currentTrackUri = track.uri;
                 await loadLyrics(track.uri);
                 updatePipLikeState();
+                updatePipProgress();
             } else {
-                // Retry after a short delay if track data not ready
                 setTimeout(initialLoad, 200);
             }
         }
@@ -1433,7 +1472,6 @@
 
         const track = data.item;
 
-        // Update track info
         const titleEl = doc.getElementById('trackTitle');
         const artistEl = doc.getElementById('trackArtist');
         const albumArtEl = doc.getElementById('albumArt');
@@ -1445,13 +1483,10 @@
             albumArtEl.src = imgUrl;
         }
 
-        // Update play button
         updatePipPlayButton();
-
-        // Update volume
         updatePipVolume();
+        updatePipProgress();
 
-        // Check if track changed
         if (track.uri !== currentTrackUri) {
             currentTrackUri = track.uri;
             loadLyrics(track.uri);
@@ -1499,7 +1534,6 @@
         
         if (!volumeSlider || !volumePercent || !volumeIconWrap) return;
 
-        // Only update if slider is not being dragged
         if (doc.activeElement !== volumeSlider) {
             const vol = Math.round((Spicetify.Player.getVolume() || 0) * 100);
             volumeSlider.value = vol;
@@ -1508,16 +1542,38 @@
         }
     }
 
+    function updatePipProgress() {
+        if (!pipWindow || pipWindow.closed) return;
+
+        const doc = pipWindow.document;
+        const progressSlider = doc.getElementById('progressSlider');
+        const currentTimeLabel = doc.getElementById('currentTimeLabel');
+        const durationLabel = doc.getElementById('durationLabel');
+
+        if (!progressSlider || !currentTimeLabel || !durationLabel) return;
+        if (isSeekingProgress || doc.activeElement === progressSlider) return;
+
+        const currentTime = Spicetify.Player.getProgress() || 0;
+        const duration = getTrackDuration();
+
+        currentTimeLabel.textContent = formatTime(currentTime);
+        durationLabel.textContent = formatTime(duration);
+
+        const percent = duration > 0 ? Math.min(currentTime / duration, 1) : 0;
+        const sliderValue = Math.round(percent * 1000);
+
+        progressSlider.value = sliderValue;
+        progressSlider.style.setProperty('--progress', `${percent * 100}%`);
+    }
+
     async function loadLyrics(uri) {
         if (!pipWindow || pipWindow.closed) return;
 
         const container = pipWindow.document.getElementById('lyricsContainer');
         if (!container) return;
 
-        // Show loading
         container.innerHTML = '<div class="status-msg"><div class="spinner"></div></div>';
 
-        // Fetch lyrics
         currentLyrics = await fetchLyrics(uri);
 
         if (!currentLyrics || !currentLyrics.lines?.length) {
@@ -1531,7 +1587,6 @@
             return;
         }
 
-        // Render lyrics
         const lyricsHtml = currentLyrics.lines
             .filter(line => line.text && line.text.trim())
             .map((line, idx) => 
@@ -1551,8 +1606,6 @@
 
         const doc = pipWindow.document;
         const currentTime = Spicetify.Player.getProgress();
-        
-        // Find active line
         let activeIdx = -1;
         const filteredLines = currentLyrics.lines.filter(l => l.text && l.text.trim());
         
@@ -1563,7 +1616,6 @@
             }
         }
 
-        // Update classes
         const lyrics = doc.querySelectorAll('.lyric');
         const isPlaying = Spicetify.Player.isPlaying();
         
@@ -1572,7 +1624,6 @@
             
             if (idx === activeIdx) {
                 el.classList.add('active');
-                // Only auto-scroll when playing, allow free scroll when paused
                 if (isPlaying) {
                     el.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 }
@@ -1604,10 +1655,35 @@
             updateCurrentLyric();
             updatePipPlayButton();
             updatePipLikeState();
+            updatePipProgress();
         }, CONFIG.updateInterval);
     }
 
     // ==================== UTILITIES ====================
+    function formatTime(ms) {
+        if (!Number.isFinite(ms) || ms < 0) return '0:00';
+
+        const totalSeconds = Math.floor(ms / 1000);
+        const minutes = Math.floor(totalSeconds / 60);
+        const seconds = totalSeconds % 60;
+
+        return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    }
+
+    function getTrackDuration() {
+        const track = Spicetify.Player.data?.item;
+        const possibleDuration =
+            track?.duration?.milliseconds ||
+            track?.duration?.totalMilliseconds ||
+            track?.duration_ms ||
+            track?.metadata?.duration ||
+            track?.metadata?.duration_ms ||
+            0;
+
+        const duration = Number(possibleDuration);
+        return Number.isFinite(duration) ? duration : 0;
+    }
+
     function escapeHtml(text) {
         const div = document.createElement('div');
         div.textContent = text;
@@ -1627,7 +1703,6 @@
                 false
             );
         }
-
     }
 
     // ==================== EVENT LISTENERS ====================
@@ -1641,7 +1716,5 @@
 
     // ==================== INIT ====================
     createButton();
-    
     console.log('[Lyric Miniplayer] Ready!');
-
 })();
