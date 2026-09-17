@@ -1,7 +1,7 @@
 [
   {
     "name": "Lyric Miniplayer",
-    "description": "A floating Picture-in-Picture lyrics window that stays on top of other apps. Features synced lyrics, 12 themes, playback controls, shuffle, like button, volume slider, and customizable display options.",
+    "description": "A floating Picture-in-Picture lyrics window that stays on top of other apps. v2: Lyrics Only mode, Dynamic cover-art theme, free scroll with resume sync, repeat button, seekable progress bar, synced lyrics, 13 themes, playback controls, and customizable display options.",
     "preview": "preview.png",
     "main": "lyrics-overlay.js",
     "readme": "README.md",
