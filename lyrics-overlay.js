@@ -1915,6 +1915,12 @@
 
         // Escape key: close panels, or exit Lyrics Only mode
         doc.addEventListener('keydown', (e) => {
+            // The shortcut also closes the miniplayer while its window has focus
+            if (matchesHotkey(e) && !e.repeat) {
+                e.preventDefault();
+                openPictureInPicture();
+                return;
+            }
             if (e.key !== 'Escape') return;
             if (themePicker.classList.contains('open')) {
                 themePicker.classList.remove('open');
@@ -2379,19 +2385,251 @@
     }
 
     // ==================== TOPBAR BUTTON ====================
-    function createButton() {
-        if (Spicetify.Topbar?.Button) {
-            new Spicetify.Topbar.Button(
-                'Lyric Miniplayer',
-                `<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+    const BUTTON_ICON = `<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
                     <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
                     <path d="M19 3h-2v2h2v2h2V5h-2V3z" opacity="0.6"/>
-                </svg>`,
-                openPictureInPicture,
-                false
-            );
+                </svg>`;
+
+    async function createButton() {
+        // Topbar API can register after Player/Platform, so wait for it (up to ~10s)
+        for (let i = 0; i < 100 && !Spicetify.Topbar?.Button; i++) {
+            await new Promise(resolve => setTimeout(resolve, 100));
         }
 
+        let topbarButton = null;
+        try {
+            if (Spicetify.Topbar?.Button) {
+                topbarButton = new Spicetify.Topbar.Button('Lyric Miniplayer', BUTTON_ICON, openPictureInPicture, false);
+            }
+        } catch (e) {
+            console.warn('[Lyric Miniplayer] Topbar button failed', e);
+        }
+
+        // Spicetify only mounts Topbar buttons once it finds Spotify's top bar by its mapped
+        // class names. When Spotify ships a build newer than Spicetify's class map, the button
+        // is created but never attached, so we mount our own next to the profile button.
+        injectFallbackButton(() => topbarButton?.element?.isConnected);
+    }
+
+    function injectFallbackButton(isTopbarMounted) {
+        const style = document.createElement('style');
+        style.textContent = `
+            #lyric-miniplayer-fallback-btn {
+                display: inline-flex; align-items: center; justify-content: center;
+                width: 32px; height: 32px; margin-inline-end: 8px; padding: 0;
+                border: none; border-radius: 50%; cursor: pointer;
+                background: transparent; color: var(--text-subdued, #b3b3b3);
+                transition: color .15s, transform .15s;
+            }
+            #lyric-miniplayer-fallback-btn:hover { color: var(--text-base, #fff); transform: scale(1.04); }
+        `;
+        document.head.appendChild(style);
+
+        const button = document.createElement('button');
+        button.id = 'lyric-miniplayer-fallback-btn';
+        button.setAttribute('aria-label', 'Lyric Miniplayer');
+        button.title = 'Lyric Miniplayer';
+        button.innerHTML = BUTTON_ICON;
+        button.addEventListener('click', openPictureInPicture);
+
+        const mount = () => {
+            if (isTopbarMounted()) {
+                button.remove();
+                return;
+            }
+            if (button.isConnected) return;
+
+            const userWidget = document.querySelector('#global-nav-bar [data-testid="user-widget-link"]');
+            const navBar = document.getElementById('global-nav-bar');
+            // Insert just left of the profile button, climbing out of single-child wrappers
+            // (tooltip divs etc.) so we land in the nav bar's row of buttons
+            let anchor = userWidget;
+            while (anchor?.parentElement && anchor.parentElement !== navBar && anchor.parentElement.childElementCount === 1) {
+                anchor = anchor.parentElement;
+            }
+            if (anchor?.parentElement) {
+                anchor.parentElement.insertBefore(button, anchor);
+            } else if (navBar) {
+                navBar.appendChild(button);
+            }
+        };
+
+        // React re-renders can drop the node, so keep re-mounting it
+        new MutationObserver(mount).observe(document.body, { childList: true, subtree: true });
+        mount();
+    }
+
+    // ==================== KEYBOARD SHORTCUT ====================
+    // Stored as { ctrl, alt, shift, meta, code } using KeyboardEvent.code (e.g. "KeyM"),
+    // or null when the user disabled the shortcut
+    const DEFAULT_HOTKEY = { ctrl: true, alt: false, shift: false, meta: false, code: 'KeyM' };
+    const HOTKEY_STORAGE_KEY = 'lyrics-overlay-hotkey';
+    const MODIFIER_CODES = ['ControlLeft', 'ControlRight', 'AltLeft', 'AltRight', 'ShiftLeft', 'ShiftRight', 'MetaLeft', 'MetaRight'];
+
+    function loadHotkey() {
+        const saved = localStorage.getItem(HOTKEY_STORAGE_KEY);
+        if (saved === null) return DEFAULT_HOTKEY;
+        try {
+            return JSON.parse(saved);
+        } catch {
+            return DEFAULT_HOTKEY;
+        }
+    }
+
+    let hotkey = loadHotkey();
+
+    function hotkeyFromEvent(e) {
+        return { ctrl: e.ctrlKey, alt: e.altKey, shift: e.shiftKey, meta: e.metaKey, code: e.code };
+    }
+
+    function matchesHotkey(e) {
+        return !!hotkey && e.code === hotkey.code && e.ctrlKey === hotkey.ctrl &&
+            e.altKey === hotkey.alt && e.shiftKey === hotkey.shift && e.metaKey === hotkey.meta;
+    }
+
+    function formatHotkey(combo) {
+        if (!combo) return 'Disabled';
+        const key = combo.code
+            .replace(/^Key/, '')
+            .replace(/^Digit/, '')
+            .replace(/^Numpad/, 'Num ')
+            .replace(/^Arrow/, '');
+        return [combo.ctrl && 'Ctrl', combo.alt && 'Alt', combo.shift && 'Shift', combo.meta && 'Win', key]
+            .filter(Boolean).join(' + ');
+    }
+
+    function isTypingTarget(el) {
+        return el && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName));
+    }
+
+    function registerHotkey() {
+        // Capture phase so Spotify's own shortcuts don't swallow the combo first
+        window.addEventListener('keydown', (e) => {
+            if (hotkeyModalOpen || e.repeat || isTypingTarget(e.target) || !matchesHotkey(e)) return;
+            e.preventDefault();
+            e.stopPropagation();
+            openPictureInPicture();
+        }, true);
+    }
+
+    // ==================== SHORTCUT SETTINGS (PROFILE MENU) ====================
+    let hotkeyModalOpen = false;
+
+    function openHotkeyModal() {
+        if (hotkeyModalOpen) return;
+        hotkeyModalOpen = true;
+
+        let pending = hotkey;
+
+        const overlay = document.createElement('div');
+        overlay.id = 'lyric-miniplayer-hotkey-modal';
+        overlay.innerHTML = `
+            <style>
+                #lyric-miniplayer-hotkey-modal {
+                    position: fixed; inset: 0; z-index: 9999;
+                    display: flex; align-items: center; justify-content: center;
+                    background: rgba(0, 0, 0, 0.6);
+                    font-family: inherit;
+                }
+                #lyric-miniplayer-hotkey-modal .lm-card {
+                    width: 340px; max-width: calc(100vw - 32px); padding: 24px;
+                    border-radius: 12px; background: #282828; color: #fff;
+                    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
+                }
+                #lyric-miniplayer-hotkey-modal h2 { margin: 0 0 6px; font-size: 18px; font-weight: 700; }
+                #lyric-miniplayer-hotkey-modal p { margin: 0 0 16px; font-size: 13px; color: #b3b3b3; line-height: 1.4; }
+                #lyric-miniplayer-hotkey-modal .lm-combo {
+                    padding: 14px; margin-bottom: 8px; border-radius: 8px;
+                    background: #3e3e3e; border: 2px solid #1ed760;
+                    text-align: center; font-size: 16px; font-weight: 700; letter-spacing: 0.3px;
+                }
+                #lyric-miniplayer-hotkey-modal .lm-hint { min-height: 18px; margin-bottom: 16px; font-size: 12px; color: #f3727f; text-align: center; }
+                #lyric-miniplayer-hotkey-modal .lm-row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+                #lyric-miniplayer-hotkey-modal button {
+                    padding: 8px 16px; border: none; border-radius: 500px; cursor: pointer;
+                    font-size: 13px; font-weight: 700; background: transparent; color: #fff;
+                }
+                #lyric-miniplayer-hotkey-modal button:hover { background: rgba(255, 255, 255, 0.1); }
+                #lyric-miniplayer-hotkey-modal .lm-save { background: #1ed760; color: #000; }
+                #lyric-miniplayer-hotkey-modal .lm-save:hover { background: #3be477; }
+                #lyric-miniplayer-hotkey-modal .lm-left { margin-right: auto; }
+                #lyric-miniplayer-hotkey-modal .lm-note { margin-top: -8px; font-size: 12px; color: #a7a7a7; }
+            </style>
+            <div class="lm-card" role="dialog" aria-modal="true" aria-labelledby="lm-hotkey-title">
+                <h2 id="lm-hotkey-title">Lyric Miniplayer shortcut</h2>
+                <p>Press the key combination you want to use to open and close the miniplayer.</p>
+                <p class="lm-note">If the shortcut doesn't change when you press it, Spotify is already using that combo and won't let it be reused. Try another one, like Ctrl + M or Ctrl + D.</p>
+                <div class="lm-combo"></div>
+                <div class="lm-hint"></div>
+                <div class="lm-row">
+                    <button class="lm-reset lm-left">Reset</button>
+                    <button class="lm-disable">Disable</button>
+                    <button class="lm-cancel">Cancel</button>
+                    <button class="lm-save">Save</button>
+                </div>
+            </div>
+        `;
+
+        const comboEl = overlay.querySelector('.lm-combo');
+        const hintEl = overlay.querySelector('.lm-hint');
+        const render = () => { comboEl.textContent = formatHotkey(pending); };
+        render();
+
+        const close = () => {
+            window.removeEventListener('keydown', onKey, true);
+            overlay.remove();
+            hotkeyModalOpen = false;
+        };
+
+        const onKey = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (e.code === 'Escape' && !e.ctrlKey && !e.altKey && !e.shiftKey && !e.metaKey) {
+                close();
+                return;
+            }
+            if (MODIFIER_CODES.includes(e.code)) return;
+
+            // Plain keys would fire while typing in Spotify's search, so require a modifier
+            // unless it's a function key
+            const isFunctionKey = /^F\d{1,2}$/.test(e.code);
+            if (!e.ctrlKey && !e.altKey && !e.metaKey && !isFunctionKey) {
+                hintEl.textContent = 'Use Ctrl, Alt or Win with the key (or an F-key)';
+                return;
+            }
+            hintEl.textContent = '';
+            pending = hotkeyFromEvent(e);
+            render();
+        };
+        window.addEventListener('keydown', onKey, true);
+
+        overlay.querySelector('.lm-reset').onclick = () => { pending = DEFAULT_HOTKEY; hintEl.textContent = ''; render(); };
+        overlay.querySelector('.lm-disable').onclick = () => { pending = null; hintEl.textContent = ''; render(); };
+        overlay.querySelector('.lm-cancel').onclick = close;
+        overlay.querySelector('.lm-save').onclick = () => {
+            hotkey = pending;
+            localStorage.setItem(HOTKEY_STORAGE_KEY, JSON.stringify(hotkey));
+            close();
+            Spicetify.showNotification(hotkey
+                ? `Lyric Miniplayer shortcut: ${formatHotkey(hotkey)}`
+                : 'Lyric Miniplayer shortcut disabled');
+        };
+        overlay.addEventListener('mousedown', (e) => {
+            if (e.target === overlay) close();
+        });
+
+        document.body.appendChild(overlay);
+    }
+
+    async function registerProfileMenuItem() {
+        for (let i = 0; i < 100 && !Spicetify.Menu?.Item; i++) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+        }
+        try {
+            new Spicetify.Menu.Item('Lyric Miniplayer shortcut', false, openHotkeyModal, BUTTON_ICON).register();
+        } catch (e) {
+            console.warn('[Lyric Miniplayer] Could not add profile menu item', e);
+        }
     }
 
     // ==================== EVENT LISTENERS ====================
@@ -2404,7 +2642,9 @@
     });
 
     // ==================== INIT ====================
-    createButton();
+    registerHotkey();
+    registerProfileMenuItem();
+    await createButton();
 
     console.log('[Lyric Miniplayer] v2 Ready!');
 

@@ -7,6 +7,14 @@ A Spicetify extension that creates a **floating Picture-in-Picture lyrics window
 
 ![Preview](preview.png)
 
+## New in v2.1.1
+
+- **Keyboard Shortcut** — Press **Ctrl + M** to open or close the miniplayer. Change it to any combo you like from your profile menu (click your profile picture → **Lyric Miniplayer shortcut**)
+
+### Fixes
+
+- **Miniplayer button shows up again on Spotify 1.3.4+** — An update caused the music note button to disappear from the top bar. It now shows up again next to your profile picture
+
 ## New in v2
 
 - **Lyrics Only Mode** — Hide everything except the lyrics for a clean, minimal overlay. Hover the window to reveal settings/close, or double-click the lyrics to toggle the mode
@@ -27,6 +35,7 @@ A Spicetify extension that creates a **floating Picture-in-Picture lyrics window
 ## Features
 
 - **Floating Window** — Opens lyrics in a separate always-on-top window
+- **Keyboard Shortcut** — Open/close the miniplayer with **Ctrl + M**, or set your own combo
 - **Synced Lyrics** — Automatically highlights and scrolls to the current line
 - **Lyrics Only Mode** — Distraction-free view with just the lyrics
 - **Free Scroll & Resume** — Browse ahead or behind, then snap back to the current line
@@ -67,11 +76,20 @@ A Spicetify extension that creates a **floating Picture-in-Picture lyrics window
 
 ## Usage
 
-1. **Click the music note icon** in Spotify's top bar
+1. **Click the music note icon** in Spotify's top bar, or press **Ctrl + M**
 
 2. A floating window will appear with your lyrics!
 
 3. **Click the ⠿ dots** in the header to open settings
+
+### Keyboard Shortcut
+
+- **Ctrl + M** opens the miniplayer, and pressing it again closes it
+- The shortcut works while Spotify or the miniplayer window is focused, and is ignored while you're typing (e.g. in Spotify's search)
+- **To change it:** click your profile picture → **Lyric Miniplayer shortcut**, press the new combo, then click **Save**
+  - The combo needs Ctrl, Alt or Win (or can be an F-key on its own)
+  - **Reset** goes back to Ctrl + M, and **Disable** turns the shortcut off
+  - Combos Spotify already uses (like **Ctrl + L** for search) can't be picked. If the shortcut doesn't change when you press a combo, Spotify is using it, so try another one like **Ctrl + D**
 
 ### Lyrics Only Mode
 
@@ -160,8 +178,16 @@ All preferences are saved and persist between sessions.
 - If lyrics stopped loading for **every** song after a Spotify or Spicetify update, update the extension to the latest version from the Marketplace, then run `spicetify apply`
 
 ### Window not appearing?
-- Click the music note icon in Spotify's top bar
+- Click the music note icon in Spotify's top bar, or press **Ctrl + M** (or your custom shortcut)
 - Check if popups are blocked in your system
+
+### Music note button missing?
+- On newer Spotify versions the button sits **next to your profile picture** in the top bar
+- Make sure you're on the latest version of the extension, then run `spicetify apply` and restart Spotify
+- You can always open the miniplayer with **Ctrl + M**, even if the button is missing
+
+### Miniplayer opens and instantly closes?
+- You likely have the extension installed twice (e.g. from the Marketplace **and** manually). Remove one copy, then run `spicetify apply`
 
 ### Extension not loading?
 1. Verify the file is in the correct Extensions folder
