@@ -318,8 +318,10 @@
             flex-shrink: 0;
             cursor: grab;
             user-select: none;
-            -webkit-app-region: drag;
-            app-region: drag;
+            /* Moved by JS (see makeDragHandle), NOT app-region: drag. Electron
+               caches the draggable-region hit map and it goes stale after the
+               window is resized or hidden & re-shown (tabbing out), leaving the
+               header un-draggable until a reflow. JS moveBy has no such cache. */
         }
 
         .header:active {
@@ -1786,14 +1788,19 @@
 
         // Lyrics Only mode drag: move the window by hand instead of using
         // app-region: drag, which would block hover events over empty space.
-        function makeDragHandle(el) {
+        // When requireLyricsOnly is true (default) the handle only drags in
+        // Lyrics Only mode (float bar, lyrics area, side rails). Pass false for
+        // the header, which is visible — and draggable — only in normal mode.
+        function makeDragHandle(el, requireLyricsOnly = true) {
+            if (!el) return;
             el.addEventListener('pointerdown', (e) => {
-                if (e.button !== 0 || !lyricsOnly) return;
+                if (e.button !== 0) return;
+                if (requireLyricsOnly ? !lyricsOnly : lyricsOnly) return;
                 // Buttons and lyric lines keep their own click behavior
                 if (e.target.closest('button, .lyric')) return;
                 let lastX = e.screenX;
                 let lastY = e.screenY;
-                el.setPointerCapture(e.pointerId);
+                try { el.setPointerCapture(e.pointerId); } catch (err) {}
                 const onMove = (ev) => {
                     const dx = ev.screenX - lastX;
                     const dy = ev.screenY - lastY;
@@ -1801,20 +1808,26 @@
                     lastY = ev.screenY;
                     try { win.moveBy(dx, dy); } catch (err) {}
                 };
-                const onUp = () => {
+                const cleanup = () => {
                     el.removeEventListener('pointermove', onMove);
-                    el.removeEventListener('pointerup', onUp);
-                    el.removeEventListener('pointercancel', onUp);
+                    el.removeEventListener('pointerup', cleanup);
+                    el.removeEventListener('pointercancel', cleanup);
+                    el.removeEventListener('lostpointercapture', cleanup);
+                    try { el.releasePointerCapture(e.pointerId); } catch (err) {}
                 };
                 el.addEventListener('pointermove', onMove);
-                el.addEventListener('pointerup', onUp);
-                el.addEventListener('pointercancel', onUp);
+                el.addEventListener('pointerup', cleanup);
+                el.addEventListener('pointercancel', cleanup);
+                // Fires if the OS/window steals capture (e.g. tabbing out mid-drag),
+                // so move/up listeners never leak and wedge the next drag.
+                el.addEventListener('lostpointercapture', cleanup);
             });
         }
 
+        makeDragHandle(doc.getElementById('dragHeader'), false);
         makeDragHandle(doc.getElementById('floatBar'));
         makeDragHandle(doc.getElementById('lyricsArea'));
-        doc.querySelectorAll('.drag-rail').forEach(makeDragHandle);
+        doc.querySelectorAll('.drag-rail').forEach((rail) => makeDragHandle(rail));
 
         // Settings panel toggle
         function setSettingsOpen(open) {
